@@ -1,16 +1,50 @@
 #!/bin/bash
 
-project_name=$1
 
-function install_flask_packages(){
-    touch install.log
+# -------------------------------------
+# Some variable declaration
+# -------------------------------------
+bdd=1
+unttst=2
+notst=3
+prj_name=$1
+src_dir='src'
+init_file='__init__.py'
+mnu_spcr="="
+spcr=""
+mnu_h_brdr="========================================"
+mnu_v_brdr="= "
 
-    if [ $testing_method = "1" ]; then
-        pip install behave > "install.log"
+
+init_unttst() {
+    local tst_dir='test'
+    mkdir -p $tst_dir/$prj_name
+    touch $tst_dir/$init_file
+    touch $tst_dir/$prj_name/$init_file
+}
+
+init_bdd() {
+    local ftrs_dir='features'
+    local stps_dir='steps'
+    mkdir -p $ftrs_dir/$stps_dir
+}
+
+# -------------------------------------
+# Install pip packages
+# -------------------------------------
+inst_pip_pkgs() {
+    local pip_log="pip.log"
+
+    touch $pip_log
+    if [ $tst_inpt = $bdd ]; then
+        pip install behave > $pip_log
     fi
 }
 
-function write_gitignore(){
+# -------------------------------------
+# Write .gitignore
+# -------------------------------------
+wrt_gitignore() {
     touch .gitignore
     echo "# Byte-compiled / optimized / DLL files" >> .gitignore
     echo "__pycache__/" >> .gitignore
@@ -27,81 +61,95 @@ function write_gitignore(){
     echo "*.db" >> .gitignore
 }
 
-function create_unittest(){
-    tst_dir='test'
-    init_file='__init__.py'
-    mkdir -p $tst_dir/$project_name
-    touch $tst_dir/$init_file
-    touch $tst_dir/$project_name/$init_file
+init_venv() {
+    python3 -m venv venv
+    source venv/bin/activate
 }
 
-function create_bdd(){
-    features_dir='features'
-    steps_dir='steps'
-    mkdir -p $features_dir/$steps_dir
-}
-
-function create_src(){
-    src_dir='src'
-    init_file='__init__.py'
-    mkdir -p $src_dir/$project_name
+init_prj_dir() {
+    mkdir $prj_name
+    cd $prj_name
+    mkdir -p $src_dir/$prj_name
     touch $src_dir/$init_file
-    touch $src_dir/$project_name/$init_file
+    touch $src_dir/$prj_name/$init_file
 }
 
-function create_basic_files(){
-    create_src
-    if [ $testing_method = "1" ]; then
-        create_bdd
-    elif [ $testing_method = "2" ]; then
-        create_unittest
-    fi
+# -------------------------------------
+# Get Test Input From User
+# -------------------------------------
+get_tst_inpt_frm_usr() {
+    local input=0
+    local inpt_opts=("1" "2" "3")
+    read -n 1 usr_opt 
+    for ((i=0 ; i < ${#inpt_opts[@]}; i++)); do
+        if [ $usr_opt = ${inpt_opts[$i]} ]; then
+            input=$usr_opt
+        fi
+    done
+    echo $spcr
+    return $input
 }
 
-function get_testing_method(){
-    echo ""
-    echo "---------------------"
-    echo "Enter testing method:"
-    echo "---------------------"
-    echo "1.) BDD"
-    echo "2.) Unittest"
-    echo "---------------------"
-    read -n 1 testing_method
-    echo ""
-    echo ""
+
+# -------------------------------------
+# Print Testing Menu
+# -------------------------------------
+prnt_tst_mnu() {
+    local mnu_ttl="Enter number of your 'test' framework."
+    local mnu_opts=("Behave" "Unittest" "None")
+    echo $mnu_h_brdr
+    echo "$mnu_v_brdr $mnu_ttl"
+    echo $mnu_h_brdr
+    echo $mnu_spcr
+    for ((m=0 ; m < ${#mnu_opts[@]}; m++)); do
+        num=$(($m+1))
+        echo "$mnu_v_brdr $num. ${mnu_opts[$m]}"
+    done
+    echo $mnu_spcr
+    echo $mnu_h_brdr
 }
 
-if [ -z "$project_name" ]; then
-    echo "Project name required!"
-else
-    get_testing_method
 
-    if [ $testing_method = "1" ] || [ $testing_method = "2" ]; then
-
-
+# -------------------------------------
+# Main
+# -------------------------------------
+main () {
+    prnt_tst_mnu
+    get_tst_inpt_frm_usr
+    tst_inpt=$?
+    if [ $tst_inpt = 0 ]; then
+        echo $spcr
+        echo "Invalid testing method entered!"
+        echo $spcr
+    else
         echo "Creating project directory..."
-        mkdir $project_name
-        cd $project_name
+        init_prj_dir
 
         echo "Creating virtual environment..."
-        python3 -m venv venv
-        source venv/bin/activate
+        init_venv
 
-        echo "Installing flask packages..."
-        install_flask_packages
+        echo "Installing pip packages..."
+        inst_pip_pkgs
+
+        if [ $tst_inpt = $bdd ]; then
+            echo "Initializing Behave framework ..."
+            init_bdd
+        elif [ $tst_inpt = $unttst ]; then
+            echo "Initializing Unittest framework ..."
+            init_unttst
+        fi
 
         echo "Writing .gitignore..."
-        write_gitignore
+        wrt_gitignore
 
         echo "Creating git repo..."
         git init -b main
 
-        echo "Creating basic files..."
-        create_basic_files
-
-    else
         echo ""
-        echo "Invalid testing method entered!  Enter the number 1 or 2."
+        echo "Project successfully created!"
+        echo ""
     fi
-fi
+}
 
+clear
+main
