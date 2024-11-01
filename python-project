@@ -27,6 +27,9 @@ init_bdd() {
     local ftrs_dir='features'
     local stps_dir='steps'
     mkdir -p $tst_dir/$ftrs_dir/$stps_dir
+    touch $tst_dir/$init_file
+    touch $tst_dir/$ftrs_dir/$init_file
+    touch $tst_dir/$ftrs_dir/$stps_dir/$init_file
 }
 
 # -------------------------------------
