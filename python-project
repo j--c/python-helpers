@@ -40,7 +40,8 @@ inst_pip_pkgs() {
 
     touch $pip_log
     if [ $tst_inpt = $bdd ]; then
-        pip install behave > $pip_log
+        pip install behave >> $pip_log
+        pip install PyHamcrest >> $pip_log
     fi
 }
 
