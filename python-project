@@ -8,7 +8,7 @@ bdd=1
 unttst=2
 notst=3
 prj_name=$1
-src_dir='src'
+src_dir=$1
 tst_dir='test'
 init_file='__init__.py'
 mnu_spcr="="
@@ -121,9 +121,11 @@ prnt_tst_mnu() {
 # Main
 # -------------------------------------
 main () {
+
     prnt_tst_mnu
     get_tst_inpt_frm_usr
     tst_inpt=$?
+
     if [ $tst_inpt = 0 ]; then
         echo $spcr
         echo "Invalid testing method entered!"
@@ -132,8 +134,8 @@ main () {
         echo "Creating project directory..."
         init_prj_dir
 
-        echo "Creating virtual environment..."
-        init_venv
+        #echo "Creating virtual environment..."
+        #init_venv
 
         echo "Installing pip packages..."
         inst_pip_pkgs
