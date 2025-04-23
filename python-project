@@ -11,10 +11,6 @@ prj_name=$1
 src_dir=$1
 tst_dir='test'
 init_file='__init__.py'
-mnu_spcr="="
-spcr=""
-mnu_h_brdr="========================================"
-mnu_v_brdr="= "
 
 
 init_unttst() {
@@ -76,20 +72,19 @@ init_venv() {
 init_prj_dir() {
     mkdir $prj_name
     cd $prj_name
-    mkdir -p $src_dir/$prj_name
-    touch $src_dir/$init_file
-    touch $src_dir/$prj_name/$init_file
+    mkdir -p $prj_name
+    touch $prj_name/$init_file
 }
 
 # -------------------------------------
 # Get Test Input From User
 # -------------------------------------
-get_tst_inpt_frm_usr() {
+get_inpt_frm_usr() {
     local input=0
-    local inpt_opts=("1" "2" "3")
     read -n 1 usr_opt 
-    for ((i=0 ; i < ${#inpt_opts[@]}; i++)); do
-        if [ $usr_opt = ${inpt_opts[$i]} ]; then
+    for ((i=2;i<=$#;i++)); do 
+        num=$(($i-1))
+        if [ $usr_opt = $num ]; then
             input=$usr_opt
         fi
     done
@@ -101,30 +96,30 @@ get_tst_inpt_frm_usr() {
 # -------------------------------------
 # Print Testing Menu
 # -------------------------------------
-prnt_tst_mnu() {
-    local mnu_ttl="Enter number of your 'test' framework."
-    local mnu_opts=("Behave" "Unittest" "None")
-    echo $mnu_h_brdr
-    echo "$mnu_v_brdr $mnu_ttl"
-    echo $mnu_h_brdr
-    echo $mnu_spcr
-    for ((m=0 ; m < ${#mnu_opts[@]}; m++)); do
-        num=$(($m+1))
-        echo "$mnu_v_brdr $num. ${mnu_opts[$m]}"
+prnt_mnu() {
+    mnu_spcr="="
+    spcr=""
+    mnu_h_brdr="========================================"
+    mnu_v_brdr="= "
+    echo "$mnu_h_brdr"
+    echo "$mnu_v_brdr" "$1"
+    echo "$mnu_h_brdr"
+    for ((i=2;i<=$#;i++)); do 
+        num=$(($i-1))
+        echo "$mnu_v_brdr" "$num" "${!i}"
     done
-    echo $mnu_spcr
-    echo $mnu_h_brdr
+    echo "$mnu_h_brdr"
 }
-
 
 # -------------------------------------
 # Main
 # -------------------------------------
 main () {
-
-    prnt_tst_mnu
-    get_tst_inpt_frm_usr
+    test_mnu_opts=("Enter number of your 'test' framework." "Behave" "Unittest" "None")
+    prnt_mnu "${test_mnu_opts[@]}"
+    get_inpt_frm_usr "${test_mnu_opts[@]}"
     tst_inpt=$?
+
 
     if [ $tst_inpt = 0 ]; then
         echo $spcr
@@ -134,8 +129,15 @@ main () {
         echo "Creating project directory..."
         init_prj_dir
 
-        #echo "Creating virtual environment..."
-        #init_venv
+        venv_mnu_opts=("Create a Virtual Environment." "Yes" "No")
+        prnt_mnu "${venv_mnu_opts[@]}"
+        get_inpt_frm_usr "${venv_mnu_opts[@]}"
+        vnv_inpt=$?
+
+        if [ $vnv_inpt = 1 ]; then
+            echo "Creating virtual environment..."
+            init_venv
+        fi
 
         echo "Installing pip packages..."
         inst_pip_pkgs
