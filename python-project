@@ -1,50 +1,6 @@
 #!/bin/bash
 
-
-# -------------------------------------
-# Some variable declaration
-# -------------------------------------
-bdd=1
-unttst=2
-notst=3
-prj_name=$1
-src_dir=$1
-tst_dir='test'
-init_file='__init__.py'
-
-
-init_unttst() {
-    mkdir -p $tst_dir/$prj_name
-    touch $tst_dir/$init_file
-    touch $tst_dir/$prj_name/$init_file
-}
-
-init_bdd() {
-    local ftrs_dir='features'
-    local stps_dir='steps'
-    mkdir -p $tst_dir/$ftrs_dir/$stps_dir
-    touch $tst_dir/$init_file
-    touch $tst_dir/$ftrs_dir/$init_file
-    touch $tst_dir/$ftrs_dir/$stps_dir/$init_file
-}
-
-# -------------------------------------
-# Install pip packages
-# -------------------------------------
-inst_pip_pkgs() {
-    local pip_log="pip.log"
-
-    touch $pip_log
-    if [ $tst_inpt = $bdd ]; then
-        pip install behave >> $pip_log
-        pip install PyHamcrest >> $pip_log
-    fi
-}
-
-# -------------------------------------
-# Write .gitignore
-# -------------------------------------
-wrt_gitignore() {
+write_gitignore() {
     touch .gitignore
     echo "# Byte-compiled / optimized / DLL files" >> .gitignore
     echo "__pycache__/" >> .gitignore
@@ -64,103 +20,133 @@ wrt_gitignore() {
     echo "*.db" >> .gitignore
 }
 
-init_venv() {
+init_unittest() {
+    mkdir -p "test"
+    touch "test/__init__.py"
+}
+
+init_bdd() {
+    mkdir -p "test/features/steps"
+    touch "test/__init__.py"
+    touch "test/features/__init__.py"
+    touch "test/features/steps/__init__.py"
+}
+
+install_pip_pkgs() {
+    if [ $1 = $bdd ]; then
+        local pip_log="pip.log"
+        touch $pip_log
+        pip install behave >> $pip_log
+        pip install PyHamcrest >> $pip_log
+    fi
+}
+
+init_virtual_env() {
     python3 -m venv venv
     source venv/bin/activate
 }
 
-init_prj_dir() {
-    mkdir $prj_name
-    cd $prj_name
-    mkdir -p $prj_name
-    touch $prj_name/$init_file
+init_project_dir() {
+    mkdir -p "$1/$1"
+    cd "$1"
+    touch "$1/__init__.py"
 }
 
 # -------------------------------------
-# Get Test Input From User
+# Print Menu
 # -------------------------------------
-get_inpt_frm_usr() {
-    local input=0
-    read -n 1 usr_opt 
+print_menu() {
+    menu_h_border="========================================"
+    menu_v_border="= "
+    echo "$menu_h_border"
+    echo "$menu_v_border" "$1"
+    echo "$menu_h_border"
     for ((i=2;i<=$#;i++)); do 
         num=$(($i-1))
-        if [ $usr_opt = $num ]; then
-            input=$usr_opt
+        echo "$menu_v_border" "$num" "${!i}"
+    done
+    echo "$menu_h_border"
+}
+
+# -------------------------------------
+# Get Input From User
+# -------------------------------------
+get_input_from_user() {
+    local input=0
+    read -n 1 user_opt 
+    for ((i=1; i<=$#; i++)); do 
+        num=$(($i-1))
+        if [ "$user_opt" -eq "$num" ]; then
+            input="$user_opt"
         fi
     done
-    echo $spcr
-    return $input
-}
-
-
-# -------------------------------------
-# Print Testing Menu
-# -------------------------------------
-prnt_mnu() {
-    mnu_spcr="="
-    spcr=""
-    mnu_h_brdr="========================================"
-    mnu_v_brdr="= "
-    echo "$mnu_h_brdr"
-    echo "$mnu_v_brdr" "$1"
-    echo "$mnu_h_brdr"
-    for ((i=2;i<=$#;i++)); do 
-        num=$(($i-1))
-        echo "$mnu_v_brdr" "$num" "${!i}"
-    done
-    echo "$mnu_h_brdr"
+    echo " "
+    return "$input"
 }
 
 # -------------------------------------
 # Main
 # -------------------------------------
 main () {
-    test_mnu_opts=("Enter number of your 'test' framework." "Behave" "Unittest" "None")
-    prnt_mnu "${test_mnu_opts[@]}"
-    get_inpt_frm_usr "${test_mnu_opts[@]}"
-    tst_inpt=$?
 
+    # ---------------
+    # constants
+    # ---------------
+    has_err=0   # error flag
 
-    if [ $tst_inpt = 0 ]; then
-        echo $spcr
-        echo "Invalid testing method entered!"
-        echo $spcr
-    else
-        echo "Creating project directory..."
-        init_prj_dir
+    bdd=1
+    unittest=2
+    notst=3
 
-        venv_mnu_opts=("Create a Virtual Environment." "Yes" "No")
-        prnt_mnu "${venv_mnu_opts[@]}"
-        get_inpt_frm_usr "${venv_mnu_opts[@]}"
-        vnv_inpt=$?
+    init_file="__init__.py"
 
-        if [ $vnv_inpt = 1 ]; then
-            echo "Creating virtual environment..."
-            init_venv
+    test_menu_opts=("Enter number of your 'test' framework." "Behave" "Unittest" "None")
+    invalid_test_selection="Invalid testing method entered!"
+
+    # ---------------
+    # prompt user about what test environment to use
+    # ---------------
+    test_input=0
+    while [ $test_input -eq 0 ]
+    do
+        print_menu "${test_menu_opts[@]}"
+        if [ "$has_err" -eq 1 ]; then
+            echo "$invalid_test_selection"
         fi
+        get_input_from_user "${test_menu_opts[@]}"
+        test_input=$?
+        if [ "$test_input" -eq 0 ]; then
+            has_err=1
+            clear
+        fi
+    done
 
+    echo "Creating project directory..."
+    init_project_dir $1
+
+    echo "Creating virtual environment..."
+    init_virtual_env
+
+    if [ $test_input -eq $bdd ]; then
         echo "Installing pip packages..."
-        inst_pip_pkgs
-
-        if [ $tst_inpt = $bdd ]; then
-            echo "Initializing Behave framework ..."
-            init_bdd
-        elif [ $tst_inpt = $unttst ]; then
-            echo "Initializing Unittest framework ..."
-            init_unttst
-        fi
-
-        echo "Writing .gitignore..."
-        wrt_gitignore
-
-        echo "Creating git repo..."
-        git init -b main
-
-        echo ""
-        echo "Project successfully created!"
-        echo ""
+        install_pip_pkgs test_input
+        echo "Initializing Behave framework ..."
+        init_bdd
+    elif [ $test_input -eq $unittest ]; then
+        echo "Initializing Unittest framework ..."
+        init_unittest
     fi
+
+    echo "Writing .gitignore..."
+    write_gitignore
+
+    echo "Creating git repo..."
+    git init -b main
+
+    echo ""
+    echo "Project successfully created!"
+    echo ""
 }
 
 clear
-main
+main $1
