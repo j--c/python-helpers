@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 write_gitignore() {
     touch .gitignore
     echo "# Byte-compiled / optimized / DLL files" >> .gitignore
@@ -20,10 +21,12 @@ write_gitignore() {
     echo "*.db" >> .gitignore
 }
 
+
 init_unittest() {
     mkdir -p "test"
     touch "test/__init__.py"
 }
+
 
 init_bdd() {
     mkdir -p "test/features/steps"
@@ -31,6 +34,7 @@ init_bdd() {
     touch "test/features/__init__.py"
     touch "test/features/steps/__init__.py"
 }
+
 
 install_pip_pkgs() {
     if [ $1 = $bdd ]; then
@@ -41,10 +45,12 @@ install_pip_pkgs() {
     fi
 }
 
+
 init_virtual_env() {
     python3 -m venv venv
     source venv/bin/activate
 }
+
 
 init_project_dir() {
     mkdir -p "$1/$1"
@@ -52,87 +58,136 @@ init_project_dir() {
     touch "$1/__init__.py"
 }
 
-# -------------------------------------
+
 # Print Menu
 # -------------------------------------
 print_menu() {
-    menu_h_border="========================================"
-    menu_v_border="= "
+
+    menu_h_border="$1"
+    for ((i=1;i<50;i++)); do 
+        menu_h_border="$menu_h_border$1"
+    done
+    menu_v_border=" "
     echo "$menu_h_border"
-    echo "$menu_v_border" "$1"
+    echo "$menu_v_border" "$2"
     echo "$menu_h_border"
-    for ((i=2;i<=$#;i++)); do 
-        num=$(($i-1))
+    for ((i=3;i<=$#;i++)); do 
+        num=$(($i-2))
+        echo ""
         echo "$menu_v_border" "$num" "${!i}"
     done
-    echo "$menu_h_border"
+
 }
 
+
+# Get Number Input 
 # -------------------------------------
-# Get Input From User
-# -------------------------------------
-get_input_from_user() {
-    local input=0
+get_number_input() {
+
+    # variables for this function
+    local in=0
+    local user_opt=0
+
+    # read integer input from user into user_opt
     read -n 1 user_opt 
+
+    # loop through menu options if user_opt = menu option number
+    # set input to the user_opt
     for ((i=1; i<=$#; i++)); do 
-        num=$(($i-1))
+        num=$(($i-2))
         if [ "$user_opt" -eq "$num" ]; then
-            input="$user_opt"
+            in="$user_opt"
         fi
     done
     echo " "
-    return "$input"
+
+    # return in
+    return "$in"
+
 }
 
+
+# Get Number Input 
 # -------------------------------------
-# Main
-# -------------------------------------
-main () {
+get_menu_input() {
 
-    # ---------------
-    # constants
-    # ---------------
-    has_err=0   # error flag
+    # clear screen
+    clear
 
-    bdd=1
-    unittest=2
-    notst=3
+    # invalid selection message constant
+    local invalid_selection="Invalid response entered!"
 
-    init_file="__init__.py"
+    # variables for this function
+    local input=0             # input value default
+    local has_err=0           # error flag 
 
-    test_menu_opts=("Enter number of your 'test' framework." "Behave" "Unittest" "None")
-    invalid_test_selection="Invalid testing method entered!"
-
-    # ---------------
-    # prompt user about what test environment to use
-    # ---------------
-    test_input=0
-    while [ $test_input -eq 0 ]
+    # loop to get input
+    while [ $input -eq 0 ]
     do
-        print_menu "${test_menu_opts[@]}"
+        # print menu with the opts passed in
+        print_menu "${@}"
+
+        # if input error show invalid response
         if [ "$has_err" -eq 1 ]; then
-            echo "$invalid_test_selection"
+            echo ""
+            echo "$invalid_selection"
         fi
-        get_input_from_user "${test_menu_opts[@]}"
-        test_input=$?
-        if [ "$test_input" -eq 0 ]; then
+
+        # get number input
+        echo ""
+        get_number_input "${@}"
+        input=$?
+
+        # if input returned is 0 - set error flag and clear screen
+        if [ "$input" -eq 0 ]; then
             has_err=1
             clear
         fi
     done
+    return $input
+
+}
+
+# 
+# Main
+# 
+main () {
+    
+    # constants
+    test_menu_opts=("-" "Enter number of your 'test' framework." "Behave" "Unittest" "None")
+    bdd=1
+    unittest=2
+    notst=3
+
+    virtual_menu_opts=("-" "Install a virtual environment?" "Yes" "No")
+    virtual_yes=1
+    virtual_no=2
+
+    get_menu_input "${test_menu_opts[@]}"
+    test_menu_input=$?
+
+    get_menu_input "${virtual_menu_opts[@]}"
+    virtual_menu_input=$?
+
+    clear 
+
+    echo "Test environment = $test_menu_input"
+    echo "Virtual environment = $virtual_menu_input"
 
     echo "Creating project directory..."
     init_project_dir $1
 
-    echo "Creating virtual environment..."
-    init_virtual_env
+    if [ $virtual_menu_input -eq $virtual_yes ]; then
+        echo "Creating virtual environment..."
+        init_virtual_env
+    fi
 
-    if [ $test_input -eq $bdd ]; then
+    if [ $test_menu_input -eq $bdd ]; then
         echo "Installing pip packages..."
         install_pip_pkgs test_input
         echo "Initializing Behave framework ..."
         init_bdd
-    elif [ $test_input -eq $unittest ]; then
+    elif [ $test_menu_input -eq $unittest ]; then
         echo "Initializing Unittest framework ..."
         init_unittest
     fi
@@ -146,7 +201,7 @@ main () {
     echo ""
     echo "Project successfully created!"
     echo ""
+
 }
 
-clear
 main $1
