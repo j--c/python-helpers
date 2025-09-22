@@ -24,7 +24,7 @@ write_gitignore() {
 }
 
 
-# called from init_project_dir and init_unittest
+# called from init_project_dir and init_unittest and init_bdd_dir
 write_init() {
     echo "Writing __init__.py..."
     file_path="$(realpath ${1})/__init__.py"
@@ -45,12 +45,41 @@ init_git() {
 
 
 # called from main
-init_unittest() {
+init_src_dir() {
+    echo "Initializing src directory..."
+    local project_dir_path=${1}
+    local src_path="$(realpath ${project_dir_path})/${project_name}"
+    mkdir ${src_path}
+    write_init ${src_path}
+}
+
+
+# called from main
+init_unittest_dir() {
     echo "Initializing unittest directory..."
     local project_dir_path=${1}
     local unittest_path="$(realpath ${project_dir_path})/test"
-    mkdir -p ${unittest_path}
+    mkdir ${unittest_path}
     write_init ${unittest_path}
+}
+
+
+# called from main
+init_bdd_dir() {
+    local project_dir_path=${1}
+    local unittest_path="$(realpath ${project_dir_path})/test"
+    mkdir ${unittest_path}
+    local features_path="$(realpath ${unittest_path})/features"
+    mkdir ${features_path}
+    local steps_path="$(realpath ${features_path})/steps"
+    mkdir ${steps_path}
+    write_init ${features_path}
+    write_init ${steps_path}
+
+    local pip_log="pip.log"
+    touch $pip_log
+    pip install behave >> $pip_log
+    pip install PyHamcrest >> $pip_log
 }
 
 
@@ -99,7 +128,7 @@ main() {
     clear
 
     local tf_instr='Enter the number of the test framework you want: '
-    local tf_opts=('unittest' 'behave' 'none')
+    local tf_opts=('behave' 'none')
     local tf=$(get_menu_selection "${tf_instr}" "${tf_opts[@]}")
 
     clear
@@ -113,15 +142,17 @@ main() {
     local project_name=${1}
     local project_dir_path=$(get_project_dir_path ${project_name})
 
-    init_project_dir ${project_dir_path}
-    init_git ${project_dir_path}
+    init_project_dir "${project_dir_path}"
+    init_git "${project_dir_path}"
+    init_src_dir "${project_dir_path}" "${project_name}"
+    init_unittest_dir "${project_dir_path}"
 
-    if [ "${tf}" == "unittest" ]; then
-        init_unittest ${project_dir_path}
+    if [ "${tf}" == "behave" ]; then
+        init_bdd_dir "${project_dir_path}"
     fi
 
     if [ "${virt}" == "yes" ]; then
-        init_virtual_env ${project_dir_path}
+        init_virtual_env "${project_dir_path}"
     fi
 }
 
