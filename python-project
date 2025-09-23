@@ -123,24 +123,58 @@ get_menu_selection() {
     echo ${selection}
 }
 
+yes_no_question() {
+    read -p "${1} (y/n)" -n 1 -r
+    echo $REPLY
+}
+
+confirm_project_name() {
+    if [ -z "${1}" ]; then
+        echo "ERROR: python-project requires a project name as an argument!"
+        exit 1
+    fi
+}
 
 main() {
     clear
 
+    echo "----------------------------------------"
+    echo "----         PYTHON-PROJECT         ----"
+    echo "----              j__c              ----"
+    echo "----------------------------------------"
+    echo ""
+
+    # establish project name and project dir
+    #
+    local project_name=${1}
+    confirm_project_name ${project_name}
+    local project_dir_path=$(get_project_dir_path ${project_name})
+
+    # confirm that user wants to create project
+    #
+    echo "Create a project in:"
+    local continue=$(yes_no_question "${project_dir_path}?")
+    [[ ! $continue =~ ^(y|Y)$ ]] && exit 1
+
+    echo ""
+    echo ""
+    echo ""
+
+    # get user input about the project
+    #
+    echo "---- Project Specifics ----"
+
     local tf_instr='Enter the number of the test framework you want: '
     local tf_opts=('behave' 'none')
     local tf=$(get_menu_selection "${tf_instr}" "${tf_opts[@]}")
+    local virt_instr='Install a virtual environment?'
+    local virt=$(yes_no_question "${virt_instr}")
 
-    clear
+    echo ""
+    echo ""
+    echo ""
 
-    local virt_instr='Install a virtual environment? (1=yes, 2=no) '
-    local virt_opts=('yes' 'no')
-    local virt=$(get_menu_selection "${virt_instr}" "${virt_opts[@]}")
-
-    clear
-
-    local project_name=${1}
-    local project_dir_path=$(get_project_dir_path ${project_name})
+    echo "---- Project Creation ----"
 
     init_project_dir "${project_dir_path}"
     init_git "${project_dir_path}"
@@ -151,10 +185,11 @@ main() {
         init_bdd_dir "${project_dir_path}"
     fi
 
-    if [ "${virt}" == "yes" ]; then
+    if [[ "${virt}" =~ ^(y|Y)$ ]]; then
         init_virtual_env "${project_dir_path}"
     fi
 }
 
 
 main ${1}
+exit 0
