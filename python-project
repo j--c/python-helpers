@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# called from init_project_dir
+# called from init_git
 write_gitignore() {
     echo "Writing .gitignore..."
     file_path="$(realpath ${1})/.gitignore"
@@ -24,7 +24,7 @@ write_gitignore() {
 }
 
 
-# called from init_project_dir and init_unittest and init_bdd_dir
+# called from init_project_dir and init_unittest and init_src_dir
 write_init() {
     echo "Writing __init__.py..."
     file_path="$(realpath ${1})/__init__.py"
@@ -65,21 +65,18 @@ init_unittest_dir() {
 
 
 # called from main
-init_bdd_dir() {
-    local project_dir_path=${1}
-    local unittest_path="$(realpath ${project_dir_path})/test"
-    mkdir ${unittest_path}
-    local features_path="$(realpath ${unittest_path})/features"
-    mkdir ${features_path}
-    local steps_path="$(realpath ${features_path})/steps"
-    mkdir ${steps_path}
-    write_init ${features_path}
-    write_init ${steps_path}
+install_pips() {
+    cd ${1}
+    echo "activating vm ..."
+    source venv/bin/activate
 
-    local pip_log="pip.log"
-    touch $pip_log
-    pip install behave >> $pip_log
-    pip install PyHamcrest >> $pip_log
+    pip install python-lsp-server
+    pip install flake8-black
+    pip install pep8
+
+    echo "deactivating vm ..."
+    deactivate
+    cd ..
 }
 
 
@@ -103,6 +100,13 @@ init_project_dir() {
 
 
 # called from main
+yes_no_question() {
+    read -p "${1} (y/n)" -n 1 -r
+    echo $REPLY
+}
+
+
+# called from main
 get_project_dir_path() {
     local project_dir_path="$(realpath $PWD)/${1}"
     echo $project_dir_path
@@ -110,24 +114,6 @@ get_project_dir_path() {
 
 
 # called from main
-get_menu_selection() {
-    PS3=${1}
-    select selection in ${@:2};
-    do
-        if [[ -n ${selection} ]]; then
-            break
-        else
-            PS3="Invalid selection!  Try again: "
-        fi
-    done
-    echo ${selection}
-}
-
-yes_no_question() {
-    read -p "${1} (y/n)" -n 1 -r
-    echo $REPLY
-}
-
 confirm_project_name() {
     if [ -z "${1}" ]; then
         echo "ERROR: python-project requires a project name as an argument!"
@@ -135,14 +121,21 @@ confirm_project_name() {
     fi
 }
 
-main() {
+
+# called from main
+print_script_header() {
     clear
 
-    echo "----------------------------------------"
-    echo "----         PYTHON-PROJECT         ----"
-    echo "----              j__c              ----"
-    echo "----------------------------------------"
+    echo "****************************************"
+    echo "****         PYTHON-PROJECT         ****"
+    echo "****              j__c              ****"
+    echo "****************************************"
     echo ""
+}
+
+main() {
+
+    print_script_header
 
     # establish project name and project dir
     #
@@ -160,34 +153,14 @@ main() {
     echo ""
     echo ""
 
-    # get user input about the project
-    #
-    echo "---- Project Specifics ----"
-
-    local tf_instr='Enter the number of the test framework you want: '
-    local tf_opts=('behave' 'none')
-    local tf=$(get_menu_selection "${tf_instr}" "${tf_opts[@]}")
-    local virt_instr='Install a virtual environment?'
-    local virt=$(yes_no_question "${virt_instr}")
-
-    echo ""
-    echo ""
-    echo ""
-
     echo "---- Project Creation ----"
 
     init_project_dir "${project_dir_path}"
     init_git "${project_dir_path}"
     init_src_dir "${project_dir_path}" "${project_name}"
     init_unittest_dir "${project_dir_path}"
-
-    if [ "${tf}" == "behave" ]; then
-        init_bdd_dir "${project_dir_path}"
-    fi
-
-    if [[ "${virt}" =~ ^(y|Y)$ ]]; then
-        init_virtual_env "${project_dir_path}"
-    fi
+    init_virtual_env "${project_dir_path}"
+    install_pips "${project_dir_path}"
 }
 
 
